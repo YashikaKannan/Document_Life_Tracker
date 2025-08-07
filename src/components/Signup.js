@@ -9,6 +9,7 @@ function Signup() {
       <div className="section-title">SIGN UP</div>
       <input type="text" placeholder="USER NAME" />
       <input type="password" placeholder="PASSWORD" />
+      <input type="password" placeholder="CONFIRM PASSWORD" />
       <Link to="/tracker">
         <button type="button">Submit</button>
       </Link>
