@@ -7,6 +7,8 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -20,7 +22,9 @@ function Signup() {
 
     const passwordPattern = /^(?=.*[A-Za-z])(?=.*[^A-Za-z0-9])(?=.{8,})/;
     if (!passwordPattern.test(password)) {
-      alert("Password must be at least 8 characters long, include at least 1 letter and 1 special symbol(@,!,#,*,%,^).");
+      alert(
+        "Password must be at least 8 characters long, include at least 1 letter and 1 special symbol(@,!,#,*,%,^)."
+      );
       return;
     }
 
@@ -45,32 +49,64 @@ function Signup() {
         onChange={(e) => setUsername(e.target.value)}
       />
 
-      <input
-        type="password"
-        placeholder="PASSWORD"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+      <div style={{ position: "relative" }}>
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="PASSWORD"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <span
+          onClick={() => setShowPassword(!showPassword)}
+          style={{
+            position: "absolute",
+            right: "10px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            cursor: "pointer",
+            fontSize: "16px",
+            color: "gray"
+          }}
+        >
+          {showPassword ? "🙈" : "👁️"}
+        </span>
+      </div>
 
       {passwordMismatch && (
         <div style={{ color: "red", marginBottom: "5px" }}>
-          Passwords doesn't match
+          Password dosen't match
         </div>
       )}
 
-      <input
-        type="password"
-        placeholder="CONFIRM PASSWORD"
-        value={confirmPassword}
-        onChange={(e) => {
-          setConfirmPassword(e.target.value);
-          if (password !== e.target.value) {
-            setPasswordMismatch(true);
-          } else {
-            setPasswordMismatch(false);
-          }
-        }}
-      />
+      <div style={{ position: "relative" }}>
+        <input
+          type={showConfirmPassword ? "text" : "password"}
+          placeholder="CONFIRM PASSWORD"
+          value={confirmPassword}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            if (password !== e.target.value) {
+              setPasswordMismatch(true);
+            } else {
+              setPasswordMismatch(false);
+            }
+          }}
+        />
+        <span
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          style={{
+            position: "absolute",
+            right: "10px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            cursor: "pointer",
+            fontSize: "16px",
+            color: "gray"
+          }}
+        >
+          {showConfirmPassword ? "🙈" : "👁️"}
+        </span>
+      </div>
 
       <button type="submit">Submit</button>
 
