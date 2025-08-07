@@ -54,7 +54,7 @@ function Login() {
 
       <div className="logout">
         <Link to="/Signup">
-          <button type="button">Sign Up</button>
+          <button type="button">Sn Up</button>
         </Link>
       </div>
     </div>
