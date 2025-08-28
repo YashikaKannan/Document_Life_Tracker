@@ -4,6 +4,10 @@ from reminder import start_scheduler, check_and_send_reminders
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
+from datetime import date
+import hashlib
+import hmac
+import os
 import models
 from database import SessionLocal, engine
 
@@ -11,8 +15,11 @@ from database import SessionLocal, engine
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-# Starts the reminder scheduler when the server starts
-start_scheduler()
+
+# Starts the reminder scheduler when the server starts (use startup event to avoid duplicates)
+@app.on_event("startup")
+def _start_scheduler_once():
+    start_scheduler()
 
 # CORS middleware setup
 app.add_middleware(
@@ -38,14 +45,13 @@ class UserBase(BaseModel):
     name: str
     mobile_number: str
     email: str
-    password_hash: str  # storing plain text
+    password: str
 
 class UserDisplay(BaseModel):
     user_id: int
     name: str
     mobile_number: str
     email: str
-    password_hash: str
 
     class Config:
         from_attributes = True  # replaces orm_mode in Pydantic v2
@@ -54,13 +60,13 @@ class UserDisplay(BaseModel):
 class DocumentBase(BaseModel):
     user_id: int
     document_type: str
-    expiry_date: str  # using str to allow "YYYY-MM-DD" format
+    expiry_date: date
 
 class DocumentDisplay(BaseModel):
     doc_id: int
     user_id: int
     document_type: str
-    expiry_date: str
+    expiry_date: date
     
 
     class Config:
@@ -70,11 +76,23 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+
+# ---------------------- Auth helpers ----------------------
+_PASSWORD_SALT = os.getenv("PASSWORD_SALT", "static-dev-salt-change-me")
+
+def _hash_password(plain: str) -> str:
+    data = (plain + _PASSWORD_SALT).encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
+
+def _verify_password(plain: str, stored_hash: str) -> bool:
+    computed = _hash_password(plain)
+    return hmac.compare_digest(computed, stored_hash)
+
 @app.post("/login")
 def login_user(login_data: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.name == login_data.username).first()
 
-    if not user or user.password_hash != login_data.password:
+    if not user or not _verify_password(login_data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     return {"message": "Login successful", "user_id": user.user_id , "name": user.name}
@@ -92,16 +110,16 @@ def create_user(user: UserBase, db: Session = Depends(get_db)):
         name=user.name,
         mobile_number=user.mobile_number,
         email=user.email,
-        password_hash=user.password_hash
+        password_hash=_hash_password(user.password)
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-@app.get("/users/", response_model=List[UserDisplay])
-def get_users(db: Session = Depends(get_db)):
-    return db.query(models.User).all()
+# @app.get("/users/", response_model=List[UserDisplay])
+# def get_users(db: Session = Depends(get_db)):
+#     return db.query(models.User).all()
 
 @app.get("/users/{user_id}", response_model=UserDisplay)
 def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -110,25 +128,30 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
+class PasswordUpdate(BaseModel):
+    password: str
+
 @app.put("/users/{user_id}", response_model=UserDisplay)
-def update_user(user_id: int, user: UserBase, db: Session = Depends(get_db)):
+def update_user(user_id: int, user: PasswordUpdate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    db_user.password_hash = user.password_hash
+    db_user.password_hash = _hash_password(user.password)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    db.delete(db_user)
-    db.commit()
-    return {"detail": "User deleted successfully"}
+# @app.delete("/documents/{doc_id}")
+# def delete_document(doc_id: int, db: Session = Depends(get_db)):
+#     db_doc = db.query(models.Document).filter(models.Document.doc_id == doc_id).first()
+#     if not db_doc:
+#         raise HTTPException(status_code=404, detail="Document not found")
+
+#     db.delete(db_doc)
+#     db.commit()
+#     return {"message": "Document deleted successfully", "doc_id": doc_id}
+
 
 # ---------------------- DOCUMENTS CRUD ----------------------
 
@@ -149,29 +172,13 @@ def create_document(document: DocumentBase, db: Session = Depends(get_db)):
     db.refresh(db_doc)
     return db_doc
 
-@app.get("/documents/", response_model=List[DocumentDisplay])
-def get_documents(db: Session = Depends(get_db)):
-    return db.query(models.Document).all()
+# @app.get("/documents/", response_model=List[DocumentDisplay])
+# def get_documents(db: Session = Depends(get_db)):
+#     return db.query(models.Document).all()
 
-@app.get("/documents/{doc_id}", response_model=DocumentDisplay)
-def get_document(doc_id: int, db: Session = Depends(get_db)):
-    db_doc = db.query(models.Document).filter(models.Document.doc_id == doc_id).first()
-    if not db_doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    return db_doc
+# Removed unused endpoint: get single document by id
 
-@app.put("/documents/{doc_id}", response_model=DocumentDisplay)
-def update_document(doc_id: int, document: DocumentBase, db: Session = Depends(get_db)):
-    db_doc = db.query(models.Document).filter(models.Document.doc_id == doc_id).first()
-    if not db_doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    db_doc.user_id = document.user_id
-    db_doc.document_type = document.document_type
-    db_doc.expiry_date = document.expiry_date
-    db.commit()
-    db.refresh(db_doc)
-    return db_doc
+# Removed unused endpoint: update document
 
 @app.delete("/documents/{doc_id}")
 def delete_document(doc_id: int, db: Session = Depends(get_db)):
@@ -181,18 +188,14 @@ def delete_document(doc_id: int, db: Session = Depends(get_db)):
     db.delete(db_doc)
     db.commit()
     return {"detail": "Document deleted successfully"}
+
 @app.get("/documents/user/{user_id}", response_model=List[DocumentDisplay])
 def get_documents_by_user(user_id: int, db: Session = Depends(get_db)):
     documents = db.query(models.Document).filter(models.Document.user_id == user_id).all()
-    if not documents:
-        raise HTTPException(status_code=404, detail="No documents found for this user")
     return documents
-@app.get("/users/recent")
-def get_recently_logged_user(db: Session = Depends(get_db)):
-    recent_user = db.query(models.User).order_by(models.User.last_login.desc()).first()
-    if not recent_user:
-        raise HTTPException(status_code=404, detail="No recent login found")
-    return {"user_id": recent_user.user_id}
+
+# Removed unused/broken endpoint: users/recent (no last_login column)
+
 @app.get("/send-reminders-now")
 def send_reminders_now():
     check_and_send_reminders()
