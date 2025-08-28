@@ -66,6 +66,6 @@ def start_scheduler():
         return
     _SCHEDULER = BackgroundScheduler(timezone="Asia/Kolkata")
     # 09:00 IST daily
-    _SCHEDULER.add_job(check_and_send_reminders, "cron", hour=9, minute=0, id="reminders", replace_existing=True)
+    _SCHEDULER.add_job(check_and_send_reminders, "cron", hour=19, minute=22, id="reminders", replace_existing=True)
     _SCHEDULER.start()
     print("📅 Reminder scheduler started (daily at 9:00 am IST)")
