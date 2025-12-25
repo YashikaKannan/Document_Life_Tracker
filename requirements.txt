@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-dotenv
+apscheduler
+dotenv
+cryptography
+
+# pip install -r requirements.txt
