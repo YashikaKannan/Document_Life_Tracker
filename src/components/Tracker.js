@@ -38,7 +38,7 @@ function Tracker() {
       return;
     }
 
-    fetch(`http://127.0.0.1:8000/documents/user/${userId}`)
+   fetch(`https://document-life-tracker-5hpc.onrender.com/documents/user/${userId}`)
       .then(async (res) => {
         if (!res.ok) {
           if (res.status === 404) return [];
@@ -74,11 +74,14 @@ function Tracker() {
       expiry_date: expiryDate,
     };
 
-    fetch("http://127.0.0.1:8000/documents/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newDoc),
-    })
+    fetch("https://document-life-tracker-5hpc.onrender.com/documents",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(newDoc),
+  }
+)
+
       .then((res) => {
         if (!res.ok) throw new Error("Failed to save document");
         return res.json();
@@ -97,7 +100,8 @@ function Tracker() {
 
   // Delete document
   const handleDelete = (docId) => {
-    fetch(`http://127.0.0.1:8000/documents/${docId}`, {
+    fetch(`https://document-life-tracker-5hpc.onrender.com/documents/${docId}`,
+    {
       method: "DELETE",
     })
       .then((res) => {
