@@ -38,7 +38,7 @@ function Signup() {
     setPasswordMismatch(false);
     const API_URL = process.env.REACT_APP_API_URL;
     try {
-      const res = await axios.post(`${API_URL}/users`, {
+      const res = await axios.post("https://document-life-tracker-5hpc.onrender.com/users", {
         name: username,
         mobile_number: mobilenumber,
         email: email,
