@@ -26,7 +26,7 @@ def _start_scheduler_once():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://document-life-tracker.vercel.app", "http://localhost:3000"],  # frontend URL
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],  # allow all HTTP methods
     allow_headers=["*"],  # allow all headers
 )
