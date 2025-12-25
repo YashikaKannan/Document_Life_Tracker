@@ -100,7 +100,7 @@ def login_user(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 # ---------------------- USERS CRUD ----------------------
 
-@app.post("/users/", response_model=UserDisplay)
+@app.post("/users", response_model=UserDisplay)
 def create_user(user: UserBase, db: Session = Depends(get_db)):
     # Check for duplicate email
     existing_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -156,7 +156,7 @@ def update_user(user_id: int, user: PasswordUpdate, db: Session = Depends(get_db
 
 # ---------------------- DOCUMENTS CRUD ----------------------
 
-@app.post("/documents/", response_model=DocumentDisplay)
+@app.post("/documents", response_model=DocumentDisplay)
 def create_document(document: DocumentBase, db: Session = Depends(get_db)):
     # Optional: check if user exists before adding document
     user_exists = db.query(models.User).filter(models.User.user_id == document.user_id).first()

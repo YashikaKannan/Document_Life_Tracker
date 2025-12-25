@@ -36,9 +36,9 @@ function Signup() {
     }
 
     setPasswordMismatch(false);
-
+    const API_URL = process.env.REACT_APP_API_URL;
     try {
-      const res = await axios.post("http://127.0.0.1:8000/users/", {
+      const res = await axios.post(`${API_URL}/users`, {
         name: username,
         mobile_number: mobilenumber,
         email: email,
