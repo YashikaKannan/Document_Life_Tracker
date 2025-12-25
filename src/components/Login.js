@@ -29,7 +29,8 @@ function Login() {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://127.0.0.1:8000/login", {
+      const res = await axios.post("https://document-life-tracker-5hpc.onrender.com/login",
+        {
         username: localUsername,
         password: localPassword
       });
