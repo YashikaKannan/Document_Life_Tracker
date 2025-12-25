@@ -12,7 +12,8 @@ import models
 from database import SessionLocal, engine
 
 # Create database tables
-models.Base.metadata.create_all(bind=engine)
+if os.getenv("ENV") != "production":
+    models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
